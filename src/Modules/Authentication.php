@@ -1,6 +1,9 @@
 <?php namespace App\Modules;
 use \Config\Connection;
 
+
+
+
 class Authentication
 {
 	protected $connection;
