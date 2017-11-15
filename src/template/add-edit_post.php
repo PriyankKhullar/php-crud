@@ -3,6 +3,11 @@ session_start();
 include '../../config/common-url.php';
 require_once AUTO_LOAD;
 
+// if user not login then this page does not open
+if (!$_SESSION['user'] || $_SESSION['user']['user_role'] !== 'admin') {
+ header("location:".LINK_BASE_PATH);
+}
+
 use \App\Modules\Header;
 use \App\Modules\MenuBar;
 use \App\Modules\BlogQueries;
@@ -30,22 +35,25 @@ $data = $queries->selectEditData(); //call selectEditData.
               <h2 class="mbr-header__text"><?php if(isset($_GET['uid'])){ echo 'EDIT YOUR POST'; }else { echo "ADD NEW POST"; }?></h2>
             </div>
             <form action="" method="post" data-form-title="CONTACT FORM" enctype="multipart/form-data">
+              <?php if(!isset($_GET['uid'])){ ?>
               <div class="form-group">
                 <input type="text" class="form-control" name="author" required="" placeholder="Author Name" value="<?php if(isset($_GET['uid'])){ echo $data['post_author']; } ?>" data-form-field="Author Name">
               </div>
+              <?php } ?>
               <div class="form-group">
                 <input type="text" class="form-control" name="title" required="" placeholder="Title" value="<?php if(isset($_GET['uid'])){ echo $data['post_title']; } ?>" data-form-field="Title">
               </div>
               <div class="form-group">
-                <textarea type="text" class="form-control" rows="6" name="description" required=""  placeholder="Description" data-form-field="Description"><?php if(isset($_GET['uid'])){ echo $data['post_description']; } ?></textarea>
+                <textarea type="text" class="form-control" rows="6" name="description" placeholder="Description" data-form-field="Description"><?php if(isset($_GET['uid'])){ echo $data['post_description']; } ?></textarea>
               </div>
+              
               <div class="form-group">
-                <input type="file" name="image" required="" data-form-field="Image"><?php if(isset($_GET['uid'])){ ?><br><img src="<?php echo PUBLIC_PATH.'upload-img/'.$data['post_img']; ?>" alt="img" width='150px'><?php } ?>
+                <input type="file" name="image" data-form-field="Image"><?php if(isset($_GET['uid'])){ ?><br><img src="<?php echo PUBLIC_PATH.'upload-img/'.$data['post_img']; ?>" alt="img" width='150px'><?php } ?>
               </div>
               <div class="form-group">
                 <strong>Select Catagories</strong>
-                <select name="category">
-                  <?php $queries->dropdown(); ?>
+                <select name="category" class="selectpicker">
+                  <?php $queries->dropDown(); ?>
                 </select>
               </div>
               <div class="mbr-buttons mbr-buttons--right">

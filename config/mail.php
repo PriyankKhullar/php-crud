@@ -1,13 +1,12 @@
 <?php
+require_once(AUTO_LOAD);
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require AUTO_LOAD;
-
 $mail = new PHPMailer(true);
 try {
-	// $mail->SMTPDebug = 2;
+	$mail->SMTPDebug = 2;
 	$mail->isSMTP();
 	$mail->Host = 'smtp.mailtrap.io';
 	$mail->SMTPAuth = true;
@@ -29,16 +28,20 @@ try {
 		$mail->setFrom($email, $userName);
 		$mail->addAddress('micusawu@tinoza.org', 'Priyanka');
 
-		$mail->addAttachment("../../public/attachment/".$dest);
-
-		$mail->Subject = $subject;
-		$mail->Body    = $messages;
-		if(empty($_SESSION['captcha_code'] ) || strcasecmp($_SESSION['captcha_code'], $_POST['captcha_code']) != 0){
-			echo "<script>alert('Please enter captcha code!!!'); </script>";
-		}else{
-			$mail->send();
-		}
-	}
-} catch (Exception $e) {
-	echo 'Message could not be sent.';
+		if ($attachmentName) {
+            $mail->addAttachment(LINK_BASE_PATH.'public/attachment/'.$dest);   // Add attachments
+        }
+        $mail->Subject = $subject;
+        $mail->Body    = $messages;
+        if(empty($_SESSION['captcha_code'] ) || strcasecmp($_SESSION['captcha_code'], $_POST['captcha_code']) != 0){
+        	echo "<script>alert('Please enter correct captcha code!'); </script>";
+        }else{
+        	$mail->send();
+        	echo "<script>alert('Mail send sucessfully.');
+        	location.assign('contact-us.php');
+        	</script>";
+        }
+    }
+}catch (Exception $e) {
+	echo "<script>alert('Something went wrong message could not be sent!'); </script>";
 }

@@ -3,6 +3,11 @@ session_start();
 include '../../config/common-url.php';
 require_once AUTO_LOAD;
 
+// if user not login then this page does not open
+if (!$_SESSION['user']) {
+ header("location:".LINK_BASE_PATH);
+}
+
 use \App\Modules\Header;
 use \App\Modules\MenuBar;
 use \App\Modules\BlogQueries;

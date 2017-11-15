@@ -23,12 +23,26 @@ class BlogQueries
 		if(isset($_POST['submit'])){
 			$name = $_POST['name'];
 			$email = $_POST['email'];
-			$password = $_POST['password'];
+			$password = hash("sha256", $_POST['password']);
 			$user_role = "user";
 			$table = 'user';
 			$dbfield = array("user_name"=>$name, "user_email"=>$email,"user_password"=>$password, "user_role"=>$user_role);
-			$this->commands->insert($table, $dbfield);
-			header('location:'.SRC_PATH.'template/login-form.php');
+			$sql = $this->connection->prepare("SELECT COUNT(id) FROM user WHERE user_email= :email ");
+			$sql->bindParam(':email',$email);
+			$sql->execute();
+			$rows = $sql->fetchColumn();
+
+			// if user get email already existed
+			if ($rows == 1) {
+				echo "<script>alert('This email is already exist.Please use another email.')</script>";
+			}
+
+			// user enter another email
+			else{				
+				$this->commands->insert($table, $dbfield);
+				echo "<script>alert('Account Created Successfully.'); 
+				location.assign('login-form.php'); </script>";
+			}
 		}
 	}
 	/**
@@ -41,15 +55,34 @@ class BlogQueries
 			$id = $_GET['uid'];
 			if (isset($_POST['save_post'])) {
 				$title = $_POST['title'];
-				$author = $_POST['author'];
 				$description = $_POST['description'];
-				$imageName = $_FILES['image']['name'];
-				$imageTmp = $_FILES['image']['tmp_name'];
-				$dest= "$imageName";
+				$image_name = $_FILES['image']['name'];
+				$image_tmp = $_FILES['image']['tmp_name'];
+				$dest= "$image_name";
 				$category_id = $_POST['category'];
-				move_uploaded_file($imageTmp, PUBLIC_BASE_PATH."upload-img/$imageName");
-				$update = "UPDATE post SET post_title = '$title', post_author = '$author', post_description = '$description', post_img = '$dest', category_id = '$category_id' WHERE id=".$id;
-				$query = $this->connection->prepare($update);
+				move_uploaded_file($image_tmp, PUBLIC_BASE_PATH."upload-img/$image_name");
+
+				// if user want to update img 
+				if($image_name){
+					$update = "UPDATE post SET post_title = :post_title, post_author = :post_author, post_description = :post_description, post_img = :post_img, category_id = :category_id WHERE id=".$id;
+					$query = $this->connection->prepare($update);
+					$query->bindParam(':post_img', $dest, \PDO::PARAM_STR, 15);
+					$query->bindParam(':post_title', $title, \PDO::PARAM_STR, 15);
+					$query->bindParam(':post_author', $author, \PDO::PARAM_STR, 15);
+					$query->bindParam(':post_description', $description, \PDO::PARAM_STR, 15);
+					$query->bindParam(':category_id', $category_id, \PDO::PARAM_STR, 15);
+				}
+
+				// user don't change image
+				else{
+					$update = "UPDATE post SET post_title = :post_title, post_author = :post_author, post_description = :post_description, category_id = :category_id WHERE id=".$id;
+					$query = $this->connection->prepare($update);
+					$query->bindParam(':post_title', $title, \PDO::PARAM_STR, 15);
+					$query->bindParam(':post_author', $author, \PDO::PARAM_STR, 15);
+					$query->bindParam(':post_description', $description, \PDO::PARAM_STR, 15);
+					$query->bindParam(':category_id', $category_id, \PDO::PARAM_STR, 15);
+				}
+
 				$query->execute();
 				header('location:'.LINK_BASE_PATH);
 			}
@@ -60,15 +93,14 @@ class BlogQueries
 				$title = $_POST['title'];
 				$author = $_POST['author'];
 				$description = $_POST['description'];
-				$imageName = $_FILES['image']['name'];
-				$imageTmp = $_FILES['image']['tmp_name'];
-				$dest= "$imageName";
-				$userid = $_SESSION['user']['id'];
+				$image_name = $_FILES['image']['name'];
+				$image_tmp = $_FILES['image']['tmp_name'];
+				$dest= "$image_name";
+				$user_id = $_SESSION['user']['id'];
 				$category_id = $_POST['category'];
-				print_r($_POST);
-				move_uploaded_file($imageTmp, PUBLIC_BASE_PATH."upload-img/$imageName");
+				move_uploaded_file($image_tmp, PUBLIC_BASE_PATH."upload-img/$image_name");
 				$table = 'post';
-				$dbfield = array("post_title"=>$title, "post_description"=>$description, "post_img"=>$dest, "post_author"=>$author, "user_id"=>$userid, "category_id"=>$category_id);
+				$dbfield = array("post_title"=>$title, "post_description"=>$description, "post_img"=>$dest, "post_author"=>$author, "user_id"=>$user_id, "category_id"=>$category_id);
 				$this->commands->insert($table, $dbfield);
 				header('location:'.LINK_BASE_PATH);
 			}
@@ -77,24 +109,28 @@ class BlogQueries
 	/**
 	 *  Select data from post table accroding to get uid
 	 */
-	function selectEditData()
+	function selectEditData()       
 	{
 		if (isset($_GET['uid'])){
+
 			$params = [ 'id ='.$_GET['uid'] ];
+
 			return $row = $this->commands->select('post',['*'] , $params);
 		}
 	}
 	/**
 	 *  Display categories in dropdown
 	 */
-	function dropdown()
+	function dropDown()
 	{
 		try{
-			$select = $this->connection->prepare("SELECT * FROM post_category WHERE parent_id = 1 ORDER BY 	display_order"); 
+			$parent_id = '1';
+			$select = $this->connection->prepare("SELECT * FROM post_category WHERE parent_id = :parent_id  ORDER BY display_order");
+			$select->bindParam(':parent_id', $parent_id);
 			$select->execute();
 			$result = $select->setFetchMode(\PDO::FETCH_ASSOC);
 			$row = $select->fetchall();
-			drop_down($row);
+			dropDown($row);
 		}
 		catch(\PDOException $e) {
 			echo "Error: " . $e->getMessage();
@@ -106,37 +142,40 @@ class BlogQueries
 	function showPosts()
 	{
 		try {
+			// display according to category
 			if(isset($_GET['category_id'])){
-				$id = $_GET['category_id'];
-				$select = $this->connection->prepare("SELECT * FROM post WHERE category_id =". $id); 
+				$category_id = $_GET['category_id'];
+				$select = $this->connection->prepare("SELECT * FROM post WHERE category_id = :category_id");
+				$select->bindParam(':category_id', $category_id);
 				$select->execute();
 				$result = $select->setFetchMode(\PDO::FETCH_ASSOC);
 				$row = $select->fetchall();
 				foreach ($row as $key) {
-					displayCategoryPosts($key);
+					showPostByCategoy($key);
 				}
 			}
+
+			// display search post
 			elseif(isset($_GET['search-btn'])){
-				$search = $this->connection->prepare("SELECT post.*, COUNT(distinct post_likes.id) as total_likes,  COUNT(distinct post_comments.id) as total_comments FROM post LEFT JOIN post_likes ON post_likes.post_id = post.id  LEFT  JOIN post_comments ON post_comments.post_id = post.id GROUP BY post.id ORDER BY id DESC"); 
+				$isSearch = false;
+				$search = $_GET['search-post']; 
+				$search = $this->connection->prepare("SELECT post.*, count(DISTINCT post_likes.id) as total_likes ,count(DISTINCT post_comments.id) as total_comments FROM post LEFT JOIN post_comments ON post.id =post_comments.post_id LEFT JOIN post_likes ON post.id = post_likes.post_id WHERE post.post_title Like '%".$search."%' GROUP BY post.id");
 				$search->execute();
-				$result = $search->setFetchMode(\PDO::FETCH_ASSOC);
-				$row = $search->fetchAll();
-				if (isset($_GET['search-btn'])) {
-					$isSearch = false;
-					$search = $_GET['search-post']; 
-					foreach ($row as $key) {
-						$id = $key['id'];
-						if ($key['post_title'] == $search){
-							$isSearch = true;
-							displayAllPosts($key);
-						}
-					}
-					if (!$isSearch){
-						echo "<script type='text/javascript'> alert('Record Not Found!!!'); </script>";
-						return;
+				$search->setFetchMode(\PDO::FETCH_ASSOC);
+				while ($key = $search->fetch()) 
+				{
+					if ($search->rowCount() > 0) 
+					{
+						$isSearch = true;
+						showAllPosts($key);
 					}
 				}
+				if (!$isSearch) {
+					echo "<script type='text/javascript'> alert('Record Not Found!!!'); </script>";
+					return;
+				}
 			}
+			
 			// display all post
 			else{
 				$limit = 3;
@@ -155,7 +194,7 @@ class BlogQueries
 				$result = $select->setFetchMode(\PDO::FETCH_ASSOC);
 				$row = $select->fetchAll();
 				foreach ($row as $key) {
-					displayAllPosts($key);
+					showAllPosts($key);
 				}
 			}
 		}
@@ -170,19 +209,28 @@ class BlogQueries
 	{
 		try{
 			if((isset($_GET['post_id']) && !empty($_GET['post_id'])) && (isset($_GET['user_id']) && !empty($_GET['user_id']))){
-				$post_id=$_GET['post_id'];
+				$post_id = $_GET['post_id'];
 				$user_id = $_GET['user_id'];
+				$sql = "SELECT * from post_likes WHERE user_id= :user_id AND post_id = :post_id";
+				$query_execute = $this->connection->prepare($sql);
+				$query_execute->bindParam(':user_id', $user_id);
+				$query_execute->bindParam(':post_id', $post_id);
+				$query_execute->execute();
+				
+				// if user like
+				if($query_execute->fetchColumn() > 0) {
+					$sql = "DELETE FROM post_likes WHERE user_id = :user_id AND post_id = :post_id";
 
-				$sql =   "SELECT * from post_likes WHERE user_id='".$user_id."' AND post_id =" . $post_id;
-				$query = $this->connection->query($sql);
-				if($query->fetchColumn() > 0) {
-					$sql = "DELETE FROM post_likes WHERE user_id='".$user_id."' AND post_id =" . $post_id;
-				}else{
-					$sql = "INSERT INTO post_likes (user_id, post_id)
-					VALUES ('$user_id', '$post_id')";
 				}
-				$this->connection->exec($sql);
-				header('location:'.LINK_BASE_PATH);
+				// id user unlike
+				else{
+					$sql = "INSERT INTO post_likes (user_id, post_id) VALUES (:user_id, :post_id)";
+				}
+				$like_execute = $this->connection->prepare($sql);
+				$like_execute->bindParam(':user_id', $user_id);
+				$like_execute->bindParam(':post_id', $post_id);
+				$like_execute->execute();
+				header('location:'.$_SERVER['HTTP_REFERER']);
 			}
 		}
 		catch(\PDOException $e) {
@@ -194,6 +242,7 @@ class BlogQueries
 	 */
 	function insertComment()
 	{
+		// if user do any comment
 		if(isset($_POST['comment_btn'])){
 			$name = $_POST['name'];
 			$comment = $_POST['comment'];
@@ -231,13 +280,19 @@ class BlogQueries
 	 */
 	function viewSinglePost()
 	{
-		if (isset($_GET['id'])){
-			$params = [ 
-			'id ='.$_GET['id'] 
-			];
-			$row = $this->commands->select('post',['*'] , $params);
-			displaySinglePost($row);
+		try{
+			if (isset($_GET['id'])){
+				$select = $this->connection->prepare("SELECT post.*, count(DISTINCT post_likes.id) as total_likes ,count(DISTINCT post_comments.id) as total_comments FROM post LEFT JOIN post_comments ON post.id =post_comments.post_id LEFT JOIN post_likes ON post.id = post_likes.post_id WHERE post.id =".$_GET['id']);
+				$select->execute();
+				$select->setFetchMode(\PDO::FETCH_ASSOC);
+				$row = $select->fetch();
+				showSinglePosts($row);
+			}
 		}
+		catch(\PDOException $e) {
+			echo "Error: " . $e->getMessage();
+		}
+
 	}
 	/**
 	 *  Display Comments on single post.
@@ -249,7 +304,7 @@ class BlogQueries
 			$select->execute();
 			$result = $select->setFetchMode(\PDO::FETCH_ASSOC);
 			$row = $select->fetchall();
-			displayComments($row);
+			showComment($row);
 		}
 		catch(\PDOException $e) {
 			echo "Error: " . $e->getMessage();
@@ -258,14 +313,14 @@ class BlogQueries
 	/**
 	 *  Display Latest Posts
 	 */
-	function latest_post()
+	function latestPost()
 	{
 		try{
 			$select_Data = $this->connection->prepare("SELECT * FROM post ORDER BY id DESC limit 3");
 			$select_Data->execute();
 			$result = $select_Data->setFetchMode(\PDO::FETCH_ASSOC);
 			$row = $select_Data->fetchAll();
-			latest_post($row);
+			latestPost($row);
 		} catch(PDOException $e) {
 			echo "Error: " . $e->getMessage();
 		}
@@ -294,7 +349,9 @@ class BlogQueries
 	function category()
 	{
 		try{
-			$select = $this->connection->prepare("SELECT * FROM post_category WHERE parent_id = 1 "); 
+			$parent_id = '1';
+			$select = $this->connection->prepare("SELECT * FROM post_category WHERE parent_id = :parent_id "); 
+			$select->bindParam(':parent_id',$parent_id);
 			$select->execute();
 			$result = $select->setFetchMode(\PDO::FETCH_ASSOC);
 			$row = $select->fetchall();

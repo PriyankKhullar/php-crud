@@ -15,6 +15,7 @@ $menuBar = new MenuBar;  //create object of menuBar.
 $menuBar->getContent(); //call getContent of menu.
 
 $queries = new BlogQueries; //create object of BlogQueries.
+$queries->insertLike();
 $queries->viewSinglePost(); //call viewSinglePost.
 $queries->displayComments(); //call displayComments.
 

@@ -15,14 +15,16 @@ class Authentication
 	function login(){
 		if(isset($_POST['login'])){
 			$email = $_POST['email'];
-			$password = $_POST['password'];
+			$password = hash("sha256", $_POST['password']);
 			$islogin = false;
-			try {
-				$select = $this->connection->prepare("SELECT * FROM user 
-					WHERE user_email = '$email' AND user_password = '$password'"); 
-				$select->execute();
-				$result = $select->fetch(\PDO::FETCH_ASSOC);
-				if ($select -> rowCount()>0) {
+			try{
+				$stmt =$this->connection->prepare('SELECT *	FROM user 
+					WHERE user_email = :email AND user_password = :pswd');
+				$stmt->bindParam(':email', $email, \PDO::PARAM_STR, 15);
+				$stmt->bindParam(':pswd', $password, \PDO::PARAM_INT);
+				$stmt->execute();
+				$result = $stmt->fetch(\PDO::FETCH_ASSOC);
+				if ($stmt->rowCount()>0) {
 					$islogin = true;
 					session_start();
 					$_SESSION['user'] = $result;
@@ -33,10 +35,10 @@ class Authentication
 					else{
 						header('location:'.LINK_BASE_PATH);
 					}
-					if(!$islogin){
-						echo "<script>alert('Please enter valid email or password!!!'); </script>";
-						return;
-					}
+				}
+				if(!$islogin){
+					echo "<script>alert('Please enter valid email or password!!!'); </script>";
+					return;
 				}
 			}
 			catch(\PDOException $e) {

@@ -5,7 +5,7 @@
 				<div class="mbr-navbar__column mbr-navbar__column--s mbr-navbar__brand">
 					<span class="mbr-navbar__brand-link mbr-brand mbr-brand--inline">
 						<span class="mbr-brand__logo">
-							<img class="mbr-navbar__brand-img mbr-brand__img" src="<?php echo PUBLIC_PATH.'images/discover-mobile-350x350-53.png'?>" alt="Mobirise"></a>
+							<img class="mbr-navbar__brand-img mbr-brand__img" src="<?php echo PUBLIC_PATH.'images/discover-mobile-350x350-53.png'?>" alt="Mobirise">
 						</span>
 						<span class="mbr-brand__name"><a class="mbr-brand__name text-white">BLOG TEMPLATE</a></span>
 					</span>
@@ -20,14 +20,17 @@
 								<li class="mbr-navbar__item"><a class="mbr-buttons__link btn text-white" href="<?php echo LINK_BASE_PATH; ?>">HOME</a>
 								</li>
 								<?php 
+
 								// if user login then display add-post or logout menu
 								if (isset($_SESSION['user']['user_email'])) {
 									$user_role = $_SESSION['user']['user_role'];
+
 									// if login user is admin then he can add posts in blog
 									if($user_role == 'admin'){
 										echo "<li class='mbr-navbar__item'><a class= 'mbr-buttons__link btn text-white' href=".SRC_PATH.'template/add-edit_post.php'.">ADD POST</a></li>";
 										echo "<li class='mbr-navbar__item'><a class= 'mbr-buttons__link btn text-white' href=".SRC_PATH.'template/logout.php'.">LOGOUT</a></li>";
 									}
+									
 									// if not the he can view and logout
 									else{
 										echo "<li class='mbr-navbar__item'><a class= 'mbr-buttons__link btn text-white' href=".SRC_PATH.'template/logout.php'.">LOGOUT</a></li>";

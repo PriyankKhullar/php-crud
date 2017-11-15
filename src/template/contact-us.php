@@ -16,7 +16,6 @@ $menuBar->getContent(); //call getContent of menu.
 
 ?>
 <!-- Add or Edit Form -->
-<script type='text/javascript' src='../../public/js/captcha-function.js'></script>
 <section class="mbr-section mbr-section--relative mbr-section--fixed-size" id="form1-89" style="background-color: rgb(239, 239, 239);">
   <div class="mbr-section__container mbr-section__container--std-padding container">
     <div class="row">
@@ -45,7 +44,7 @@ $menuBar->getContent(); //call getContent of menu.
                   <textarea name="messages" id="messages" class="form-control" required="" placeholder="Messages" data-form-field="messages" cols="30" rows="5"></textarea>
                 </div>
                 <div class="mbr-buttons mbr-buttons--right">
-                  <input type="file" name="attachment" accept = "file_extention|audio/*|video/*|image/*|media_type" required="" data-form-field="attachment"><br>
+                  <input type="file" name="attachment" accept = "file_extention|audio/*|video/*|image/*|media_type" data-form-field="attachment"><br>
                 </div>
                 <div class="form-group">
                   <label for='message'>Enter this code :</label>
@@ -63,6 +62,7 @@ $menuBar->getContent(); //call getContent of menu.
       </div>
     </div>
   </div>
+  <script type='text/javascript' src='../../public/js/captcha-function.js'></script>
 </section>
 <?php
 $footer = new Footer; //create obj of header.

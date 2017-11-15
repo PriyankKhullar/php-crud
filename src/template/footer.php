@@ -5,18 +5,16 @@
 				<div class="row">
 					<div class="footer-section col-lg-4">
 						<h3 class="footer-heading mbr-contacts__text"><strong>LATEST POSTS</strong></h3><br>
-						<?php $query->latest_post(); ?>
+						<?php $query->latestPost(); ?>
 					</div>
 					<div class="footer-section col-lg-4">
 						<h3 class="footer-heading mbr-contacts__text"><strong>CATAGORIES</strong></h3><br>
 						<?php $query->category(); ?>
 					</div>
-					<div class="footer-section col-lg-4">
-						<h3 class="footer-heading mbr-contacts__text"><strong>About</strong></h3><br>
+					<div class="footer-section col-lg-3">
+						<h3 class="footer-heading mbr-contacts__text"><strong>ABOUT</strong></h3><br>
 						<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
-							tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-							quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-							consequat.
+							tempor incididunt ut labore et dolore magna aliqua.
 						</p>
 					</div>
 				</div>
