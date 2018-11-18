@@ -12,6 +12,6 @@ Steps for configration:
 6. admin can add new posts in your blogs.
 7. for user login:
 	kirti@gmail.com		//gmail
-	123				//password
+	123				//password 
 
 8. user can just like or comment post not create.
